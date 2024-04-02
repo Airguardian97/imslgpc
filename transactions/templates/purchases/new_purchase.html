@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block title %} New Purchase {% endblock title %}
+
+
+{% block content %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <div style="color:#575757; font-style: bold; font-size: 3rem; border-bottom: 1px solid white;">New Purchase</div>
+    
+        <br><!-- Log on to codeastro.com for more projects -->
+
+        <div class="panel panel-default">
+            <div class="panel-heading panel-heading-text">Supplier Details</div>
+            <div class="panel-body">
+                    
+                <div class="form-group">
+                    <label for="id_name" class="panel-body-text">Supplier Name:</label>
+                    <input type="text" class="form-control textinput" id="id_name" value="{{ supplier.name }}" disabled>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="id_phone" class="panel-body-text">Phone No:</label>
+                        <input type="text" class="form-control textinput" id="id_phone" value="{{ supplier.phone }}" disabled>
+                    </div>
+                    {% comment %} <div class="form-group col-md-6">
+                        <label for="id_gstin" class="panel-body-text">GSTIN No:</label>
+                        <input type="gstin" class="form-control textinput" id="id_gstin" value="{{ supplier.gstin }}" disabled>
+                    </div> {% endcomment %}
+                </div>
+
+            </div><!-- Log on to codeastro.com for more projects -->
+        </div>
+
+        <br>
+
+        <form method="post" class="panel panel-default">
+            
+            {% csrf_token %}
+            {{ formset.management_form }}
+            
+            <div class="panel-heading panel-heading-text">Product Details</div>
+            
+                <div id="stockitem"> 
+                    <div class="panel-body">
+                    {% for form in formset %}
+                        <div class="row form-row">
+                            <div class="form-group col-md-6">
+                                {{ form.stock.errors }}
+                                <label class="panel-body-text">Stock:</label>
+                                {{ form.stock }}
+                            </div><!-- Log on to codeastro.com for more projects -->
+                            <div class="form-group col-md-2">
+                                <label class="panel-body-text">Price per item:</label>
+                                {{ form.perprice }}
+                            </div>
+                            <div class="form-group col-md-2">
+                                {{ form.quantity.errors }}
+                                <label class="panel-body-text">Quantity:</label>
+                                {{ form.quantity }}
+                            </div><!-- Log on to codeastro.com for more projects -->
+                            <div class="form-group col-md-1">
+                                <label class="panel-body-text">Price:</label>
+                                <input type="text" class="textinput form-control totalprice" value="1" disabled required>
+                            </div>
+                            <div class="form-group col-md-1">
+                                <label class="panel-body-text" style="color: #000">.</label>
+                                <button class="form-control btn btn-danger remove-form-row">-</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                        <div style="text-align: right;">                    
+                            <a href="#" class="add-form-row">+ Add More</a>
+                        </div>
+                    </div>
+                </div>
+
+
+            <br><!-- Log on to codeastro.com for more projects -->
+
+            <div class="align-middle">
+                <button type="submit" class="btn btn-success">Add to Purchases</button>
+                <a href="{% url 'select-supplier' %}" class="btn btn-danger">Go Back</a>
+                <a href="{% url 'purchases-list' %}" class="btn btn-secondary">Cancel</a>
+                
+
+<!-- Add an invisible textarea to capture the pasted data -->
+<textarea id="pastedDataTextarea" style="display: none;"></textarea>
+
+            </div>
+            
+        </form>
+
+
+    </div>
+
+    <div id="template" contenteditable="true" style="border: 1px solid black; min-height: 100px;">
+        Paste Excel table here...
+    </div>
+    <button id="pasteButton">Paste Data</button>
+    <br>
+
+
+
+
+    <!-- Custom JS to add and remove item forms --><!-- Log on to codeastro.com for more projects -->
+    <script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        
+        //creates custom alert object
+        var custom_alert = new custom_alert();
+
+        function updateElementIndex(el, prefix, ndx) {
+            var id_regex = new RegExp('(' + prefix + '-\\d+)');
+            var replacement = prefix + '-' + ndx;
+            if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
+            if (el.id) el.id = el.id.replace(id_regex, replacement);
+            if (el.name) el.name = el.name.replace(id_regex, replacement);
+        }
+        
+        //stores the total no of item forms
+        var total = 1;
+
+        function cloneMore(selector, prefix) {
+            var newElement = $(selector).clone(true);
+            //var total = $('#id_' + prefix + '-TOTAL_FORMS').val();
+            newElement.find(':input:not([type=button]):not([type=submit]):not([type=reset])').each(function() {
+                var name = $(this).attr('name')
+                if(name) {
+                    name = name.replace('-' + (total-1) + '-', '-' + total + '-');
+                    var id = 'id_' + name;
+                    $(this).attr({'name': name, 'id': id}).val('').removeAttr('checked');
+                }
+            });
+            newElement.find('label').each(function() {
+                var forValue = $(this).attr('for');
+                if (forValue) {
+                forValue = forValue.replace('-' + (total-1) + '-', '-' + total + '-');
+                $(this).attr({'for': forValue});
+                }
+            });
+            total++;
+            $('#id_' + prefix + '-TOTAL_FORMS').val(total);
+            $(selector).after(newElement);
+            return false;
+        }
+        
+        function deleteForm(prefix, btn) {
+            //var total = parseInt($('#id_' + prefix + '-TOTAL_FORMS').val());
+            if (total > 1){
+                btn.closest('.form-row').remove();
+                var forms = $('.form-row');
+                $('#id_' + prefix + '-TOTAL_FORMS').val(forms.length);
+                for (var i=0, formCount=forms.length; i<formCount; i++) {
+                    $(forms.get(i)).find(':input').each(function() {
+                        updateElementIndex(this, prefix, i);
+                    });
+                }
+                total--;
+            } else {
+                custom_alert.render("Field cannot be deleted");
+            }
+            return false;
+        }
+        
+        $(document).on('click', '.add-form-row', function(e){
+            e.preventDefault();
+            cloneMore('.form-row:last', 'form');
+            return false;
+        });
+        
+        $(document).on('click', '.remove-form-row', function(e){
+            e.preventDefault();
+            deleteForm('form', $(this));
+            return false;
+        });
+
+
+        //updates the total price by multiplying 'price per item' and 'quantity' 
+        $(document).on('change', '.setprice', function(e){
+            e.preventDefault();
+            //gets the values
+            var element = $(this);
+            var quantity = element.parents('.form-row').find('.quantity').val();
+            var perprice = element.parents('.form-row').find('.price').val();
+            //calculates the total
+            var tprice = quantity * perprice;
+            //sets it to field
+            element.parents('.form-row').find('.totalprice').val(tprice);
+            return false;
+        });
+
+        function getAllElementsByClass(className) {
+            return document.getElementsByClassName(className);
+        }
+        var $j = jQuery.noConflict();
+        function saveItemQuantity(name, quantity) {
+            $j.ajax({
+                type: 'POST',
+                url: 'save_stock/',  // Replace with the URL of your Django view
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' }, // Include CSRF token
+                data: {
+                    'name': name,
+                    'quantity': quantity
+                },
+                dataType: 'json',
+                // Other AJAX settings...
+            });
+        }
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       // Function to handle paste action
+       function handlePaste(event) {
+        // Prevent the default paste behavior
+        event.preventDefault();
+        
+        // Get the pasted content
+        var pastedData = event.clipboardData.getData('text/plain');
+        
+        // Process the pasted content
+        var rows = pastedData.split('\n');
+        var tableHTML = '<table border="1">';
+
+
+
+        var rowind = 0;
+        var finalrowcheck = 0;
+        // Example usage
+        var elements = getAllElementsByClass("textinput form-control setprice stock");       
+        rowind = elements.length - 1;
+        finalrowcheck = rowind + rows.length  - 1
+        finalrowcheck = finalrowcheck - 1
+
+        //alert(finalrowcheck)
+
+
+       // alert(rowind)
+        rows.forEach(function(row, index) {                        
+            var columns = row.split('\t'); // Assuming tab-separated data
+            tableHTML += '<tr>';
+            if (columns[0] !== "")   {  
+                 
+                var stockname = document.getElementById("id_form-" + rowind + "-stock");
+                if (stockname !== null ) {
+                    // Iterate over each option in the dropdown
+                    var valueFound = false;
+                    
+                    for (var i = 0; i < stockname.options.length; i++) {
+                        var option = stockname.options[i];
+                        // Check if the option's value matches the value you want to select
+                     
+                        if (option.textContent === columns[3]) { // Replace desiredValue with the value you want to select
+                            //alert(option.textContent === columns[3])
+                            // If there's a match, select the option
+                            option.selected = true;
+                            valueFound = true;
+                            // Optionally, you can break the loop if you only want to select the first matching option
+                            // break;
+                        } else {                                     
+                           
+                        }   
+                    
+                    }
+                  
+                    if (!valueFound) {
+                        saveItemQuantity(columns[3], columns[1]); // Save item name and quantity
+                                                 
+                        }       
+                } else {
+                        // Handle case when stockname element is not found                     
+                }
+               
+
+                var stockquan = document.getElementById("id_form-" + rowind + "-quantity");
+                if (stockquan) {
+                    stockquan.value = columns[1];
+                } else {
+                    console.error("Element with ID 'id_form-" + rowind + "-quantity' not found.");
+                }
+                var stockperprice = document.getElementById("id_form-" + rowind + "-perprice");
+                if (stockperprice !== null) {
+                    // Assuming 'columns[6]' contains the decimal value
+                    var floatValue = parseFloat(columns[6]); // Convert to float if it's not already
+                    if (!isNaN(floatValue)) {
+                        stockperprice.value = floatValue.toFixed(2); // Format with two decimal places
+                    } else {
+                        
+                        console.error("Invalid decimal value in columns[6])");
+                    }
+                } else {
+                    console.error("Element with ID 'id_form-" + rowind + "-perprice' not found.");
+                }
+       
+                if (rowind === finalrowcheck) {
+                
+                } else {
+                 // Call the click event of '.add-form-row'
+                var addFormRowButton = document.querySelector('.add-form-row');
+                if (addFormRowButton) {
+                    addFormRowButton.click();
+                } else {
+                    console.error("Element with class 'add-form-row' not found.");
+                }
+                }
+            rowind++; 
+           
+            //alert(rowind)
+        } else {
+            // Alert or handle when columns[0] is empty
+            //alert("Column 0 is empty.");
+        }
+
+        });
+       // tableHTML += '</table>';
+        
+        // Insert the table into the template
+        document.getElementById('template').innerHTML = tableHTML;
+    }
+
+    // Add paste event listener to the template
+    document.getElementById('template').addEventListener('paste', handlePaste); 
+
+     
+    </script>
+
+{% endblock content %}
